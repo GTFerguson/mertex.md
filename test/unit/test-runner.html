@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mertex.md Test Suite with Visual Preview</title>
+    
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    
+    <!-- Highlight.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+    
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --bg-chat: #252543;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --text-muted: #6a6a8a;
+            --accent-primary: #00d9ff;
+            --accent-secondary: #7b68ee;
+            --accent-success: #00ff88;
+            --accent-warning: #ffc107;
+            --accent-danger: #ff4757;
+            --border-color: #2a2a4a;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2em;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        /* Tabs Navigation */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+        
+        .tab-btn.active {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+        
+        /* Controls Panel */
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .button:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+        
+        .button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button.secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .button.secondary:hover {
+            background: var(--border-color);
+        }
+        
+        .button.danger {
+            background: transparent;
+            color: var(--accent-danger);
+            border: 1px solid var(--accent-danger);
+        }
+        
+        .button.danger:hover {
+            background: var(--accent-danger);
+            color: white;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-group label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .control-group input[type="range"] {
+            width: 120px;
+        }
+        
+        .control-group span {
+            font-family: var(--font-mono);
+            color: var(--accent-primary);
+            min-width: 60px;
+        }
+        
+        .control-group select {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        /* Summary Cards */
+        .summary {
+            display: none;
+            margin-bottom: 20px;
+        }
+        
+        .summary.show {
+            display: block;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .summary-card.total {
+            border-left: 4px solid #2196F3;
+        }
+        
+        .summary-card.passed {
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .summary-card.failed {
+            border-left: 4px solid #f44336;
+        }
+        
+        .summary-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .summary-card .label {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+            color: var(--text-secondary);
+        }
+        
+        /* Main Content Area */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        /* Panel Styling */
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .panel-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        /* Test Results List */
+        .results-list {
+            padding: 20px;
+        }
+        
+        .category-header {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin: 20px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--accent-primary);
+        }
+        
+        .category-header:first-child {
+            margin-top: 0;
+        }
+        
+        .test-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            background: var(--bg-chat);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .test-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .test-item.pass {
+            border-color: #4CAF50;
+        }
+        
+        .test-item.fail {
+            border-color: #f44336;
+        }
+        
+        .test-item-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-icon {
+            font-size: 1.3em;
+        }
+        
+        .test-item.pass .test-icon {
+            color: #4CAF50;
+        }
+        
+        .test-item.fail .test-icon {
+            color: #f44336;
+        }
+        
+        .test-name {
+            font-weight: 500;
+            flex: 1;
+        }
+        
+        .test-error {
+            color: var(--accent-danger);
+            font-size: 0.9em;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(255, 71, 87, 0.1);
+            border-radius: 4px;
+            font-family: var(--font-mono);
+        }
+        
+        /* Visual Preview Section */
+        .visual-preview-section {
+            display: none;
+        }
+        
+        .visual-preview-section.show {
+            display: block;
+        }
+        
+        .test-case-selector {
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .test-case-selector select {
+            width: 100%;
+            max-width: 400px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .visual-test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        @media (max-width: 1000px) {
+            .visual-test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .preview-panel {
+            background: var(--bg-chat);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .preview-panel-header {
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        .preview-content {
+            padding: 16px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .raw-input {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            white-space: pre-wrap;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .rendered-output {
+            line-height: 1.6;
+        }
+        
+        /* Streaming Controls */
+        .streaming-controls {
+            padding: 15px 20px;
+            background: var(--bg-tertiary);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-badge.idle {
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+        }
+        
+        .status-badge.streaming {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            animation: pulse 1s infinite;
+        }
+        
+        .status-badge.complete {
+            background: var(--accent-success);
+            color: var(--bg-primary);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Streaming Cursor */
+        .streaming-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background: var(--accent-primary);
+            animation: blink 0.8s infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        /* Debug Panel */
+        .debug-panel {
+            max-height: 200px;
+        }
+        
+        .debug-content {
+            max-height: 140px;
+            overflow-y: auto;
+            padding: 10px 16px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            background: #0a0a1a;
+        }
+        
+        .debug-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            gap: 8px;
+        }
+        
+        .debug-entry .timestamp {
+            color: var(--text-muted);
+        }
+        
+        .debug-entry.info { color: var(--text-secondary); }
+        .debug-entry.math { color: var(--accent-secondary); }
+        .debug-entry.render { color: var(--accent-primary); }
+        .debug-entry.error { color: var(--accent-danger); }
+        .debug-entry.success { color: var(--accent-success); }
+        
+        .stats-bar {
+            display: flex;
+            gap: 24px;
+            padding: 10px 16px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+        
+        /* Visual Test Card */
+        .visual-test-card {
+            background: var(--bg-chat);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .visual-test-card-header {
+            padding: 15px 20px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .visual-test-card-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .visual-test-card-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+        
+        @media (max-width: 900px) {
+            .visual-test-card-body {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .visual-test-pane {
+            padding: 0;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .visual-test-pane:last-child {
+            border-right: none;
+        }
+        
+        .visual-test-pane-header {
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.2);
+            font-size: 0.85em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .visual-test-pane-content {
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        /* KaTeX styling */
+        .rendered-output .katex {
+            font-size: 1.1em;
+        }
+        
+        .rendered-output .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5em 0;
+        }
+        
+        /* Markdown content styling */
+        .rendered-output h1, .rendered-output h2, .rendered-output h3,
+        .rendered-output h4, .rendered-output h5, .rendered-output h6 {
+            color: var(--text-primary);
+            margin: 1em 0 0.5em 0;
+            font-weight: 600;
+        }
+        
+        .rendered-output h1 {
+            font-size: 1.5em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3em;
+        }
+        
+        .rendered-output h2 { font-size: 1.3em; }
+        .rendered-output h3 { font-size: 1.1em; }
+        .rendered-output p { margin: 0.75em 0; }
+        .rendered-output ul, .rendered-output ol { margin: 0.75em 0; padding-left: 1.5em; }
+        .rendered-output li { margin: 0.3em 0; }
+        
+        .rendered-output code {
+            font-family: var(--font-mono);
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        .rendered-output pre {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 12px 16px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+        
+        .rendered-output pre code {
+            background: transparent;
+            padding: 0;
+        }
+        
+        .rendered-output blockquote {
+            border-left: 4px solid var(--accent-primary);
+            padding-left: 16px;
+            margin: 1em 0;
+            color: var(--text-secondary);
+        }
+        
+        .rendered-output table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+        
+        .rendered-output th, .rendered-output td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .rendered-output th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+        }
+        
+        .rendered-output strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Error Box */
+        .error-box {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--accent-danger);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            color: var(--accent-danger);
+        }
+        
+        .error-box h3 {
+            margin-top: 0;
+        }
+        
+        /* Filter checkboxes */
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .filter-controls label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .filter-controls input[type="checkbox"] {
+            accent-color: var(--accent-primary);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        
+        /* Mermaid */
+        .rendered-output .mermaid, .rendered-output .mermaid-container {
+            background: #1e1e2e;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 1em 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Mertex.md Test Suite</h1>
+            <p>Testing MathProtector, StreamingMathRenderer, and MarkdownRenderer with Visual Preview</p>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="unit-tests">📋 Unit Tests</button>
+            <button class="tab-btn" data-tab="visual-tests">👁️ Visual Tests</button>
+            <button class="tab-btn" data-tab="streaming-demo">🌊 Streaming Demo</button>
+        </div>
+        
+        <!-- Unit Tests Tab -->
+        <div id="unit-tests-tab" class="tab-content">
+            <div class="controls">
+                <button id="runTests" class="button">▶️ Run All Tests</button>
+                <button id="runConsole" class="button secondary">📋 Run in Console</button>
+                
+                <div class="filter-controls">
+                    <label>
+                        <input type="checkbox" id="showPassedOnly" />
+                        Passed only
+                    </label>
+                    <label>
+                        <input type="checkbox" id="showFailedOnly" />
+                        Failed only
+                    </label>
+                </div>
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div>Running tests...</div>
+            </div>
+            
+            <div id="error"></div>
+            
+            <div id="summary" class="summary"></div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>📊 Test Results</h2>
+                    <span id="testCount">0 tests</span>
+                </div>
+                <div id="results" class="results-list">
+                    <p style="color: var(--text-muted); padding: 20px;">Click "Run All Tests" to execute the test suite</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Visual Tests Tab -->
+        <div id="visual-tests-tab" class="tab-content" style="display: none;">
+            <div class="controls">
+                <div class="control-group">
+                    <label>Test Category:</label>
+                    <select id="visualCategorySelect">
+                        <option value="all">All Categories</option>
+                        <option value="currency">Currency Detection</option>
+                        <option value="math">Math Expressions</option>
+                        <option value="mixed">Mixed Content</option>
+                        <option value="streaming">Streaming Tests</option>
+                        <option value="mermaid">Mermaid Diagrams</option>
+                    </select>
+                </div>
+                <button id="runVisualTests" class="button">👁️ Run Visual Tests</button>
+                <button id="clearVisual" class="button danger">🗑️ Clear</button>
+            </div>
+            
+            <div id="visualTestsContainer">
+                <p style="color: var(--text-muted); padding: 20px;">Select a category and click "Run Visual Tests" to see rendered output</p>
+            </div>
+        </div>
+        
+        <!-- Streaming Demo Tab -->
+        <div id="streaming-demo-tab" class="tab-content" style="display: none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>🌊 Streaming Simulation</h2>
+                    <span id="streamStatus" class="status-badge idle">Idle</span>
+                </div>
+                
+                <div class="streaming-controls">
+                    <div class="control-group">
+                        <label>Test Case:</label>
+                        <select id="streamingTestSelect" style="min-width: 250px;"></select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Speed (ms):</label>
+                        <input type="range" id="speedSlider" min="5" max="200" value="30">
+                        <span id="speedValue">30ms</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Chunk:</label>
+                        <input type="range" id="chunkSlider" min="1" max="20" value="3">
+                        <span id="chunkValue">3 chars</span>
+                    </div>
+                    
+                    <button id="streamBtn" class="button">▶️ Stream</button>
+                    <button id="pauseBtn" class="button secondary" disabled>⏸️ Pause</button>
+                    <button id="renderAllBtn" class="button secondary">⚡ Render All</button>
+                    <button id="clearStreamBtn" class="button danger">🗑️ Clear</button>
+                </div>
+                
+                <div class="visual-test-grid">
+                    <div class="preview-panel">
+                        <div class="preview-panel-header">📝 Raw Input</div>
+                        <div class="preview-content">
+                            <div id="streamingRawInput" class="raw-input">Select a test case to begin...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="preview-panel">
+                        <div class="preview-panel-header">
+                            💬 Rendered Output
+                            <span id="charCount" style="margin-left: auto; font-size: 0.85em; color: var(--text-muted);">0 / 0 chars</span>
+                        </div>
+                        <div class="preview-content">
+                            <div id="streamingOutput" class="rendered-output">
+                                <p class="placeholder" style="color: var(--text-muted); font-style: italic;">Output will appear here...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Debug Panel -->
+            <div class="panel debug-panel" style="margin-top: 20px;">
+                <div class="panel-header">
+                    <h2>🔍 Debug Console</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 5px; font-size: 0.85em; color: var(--text-secondary);">
+                            <input type="checkbox" id="showDebug" checked> Show
+                        </label>
+                        <button id="clearDebug" class="button secondary" style="padding: 4px 10px; font-size: 0.8rem;">Clear</button>
+                    </div>
+                </div>
+                
+                <div class="debug-content" id="debugContent">
+                    <div class="debug-entry info">[mertex.md] Test environment initialized</div>
+                </div>
+                
+                <div class="stats-bar">
+                    <div class="stat">
+                        <span class="stat-label">Renders:</span>
+                        <span id="statRenders" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Skipped:</span>
+                        <span id="statSkipped" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Formulas:</span>
+                        <span id="statFormulas" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Time:</span>
+                        <span id="statTime" class="stat-value">0ms</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dependencies (loaded in order) -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/lib/marked.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+    
+    <!-- Load Mertex.md UMD Bundle -->
+    <script src="../../dist/mertex.umd.js"></script>
+    
+    <!-- Also load minified version for MertexMD class -->
+    <script src="../../dist/mertex.min.js"></script>
+    
+    <!-- Test cases from main test folder -->
+    <script src="../test-cases.js"></script>
+    
+    <!-- Extract MathProtector and MertexMD from bundle -->
+    <script>
+        // Debug: Check what's loaded from the bundle
+        console.log('=== Mertex Library Loading Debug ===');
+        console.log('typeof Mertex:', typeof Mertex);
+        console.log('typeof window.Mertex:', typeof window.Mertex);
+        console.log('typeof MertexMD:', typeof MertexMD);
+        console.log('typeof window.MertexMD:', typeof window.MertexMD);
+        
+        // Check Mertex object contents if available
+        if (typeof Mertex !== 'undefined') {
+            console.log('Mertex keys:', Object.keys(Mertex));
+            console.log('Mertex.MertexMD:', typeof Mertex.MertexMD);
+            console.log('Mertex.default:', typeof Mertex.default);
+        }
+        
+        // Ensure MertexMD is globally available from multiple sources
+        if (typeof window.MertexMD === 'undefined' || typeof window.MertexMD !== 'function') {
+            if (typeof Mertex !== 'undefined') {
+                // Try to get MertexMD from Mertex object
+                if (typeof Mertex.MertexMD === 'function') {
+                    window.MertexMD = Mertex.MertexMD;
+                    console.log('✓ MertexMD extracted from Mertex.MertexMD');
+                } else if (typeof Mertex.default === 'function') {
+                    window.MertexMD = Mertex.default;
+                    console.log('✓ MertexMD extracted from Mertex.default');
+                } else if (typeof Mertex === 'function') {
+                    // The Mertex object itself might be the class
+                    window.MertexMD = Mertex;
+                    console.log('✓ MertexMD set to Mertex itself');
+                }
+            }
+        } else {
+            console.log('✓ MertexMD already available from window global');
+        }
+        
+        // Make MathProtector globally available
+        if (typeof window.MathProtector === 'undefined') {
+            if (typeof window.MertexMD !== 'undefined' && window.MertexMD.MathProtector) {
+                window.MathProtector = window.MertexMD.MathProtector;
+                console.log('✓ MathProtector extracted from MertexMD');
+            } else if (typeof Mertex !== 'undefined' && Mertex.MathProtector) {
+                window.MathProtector = Mertex.MathProtector;
+                console.log('✓ MathProtector extracted from Mertex');
+            } else {
+                console.warn('WARNING: MathProtector not available from any source');
+            }
+        } else {
+            console.log('✓ MathProtector already available from window global');
+        }
+        
+        // Initialize mermaid
+        if (typeof mermaid !== 'undefined') {
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: 'dark',
+                securityLevel: 'loose'
+            });
+            console.log('✓ Mermaid initialized');
+        }
+        
+        console.log('=== Final Status ===');
+        console.log('window.MertexMD:', typeof window.MertexMD);
+        console.log('window.MathProtector:', typeof window.MathProtector);
+    </script>
+    
+    <!-- Load Test Framework -->
+    <script src="./test-runner.js"></script>
+    
+    <!-- Load Test Suite -->
+    <script src="./math-rendering.test.js"></script>
+    
+    <!-- Main Application Script -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // ========================================
+        // DOM Elements
+        // ========================================
+        const runTestsBtn = document.getElementById('runTests');
+        const consoleBtn = document.getElementById('runConsole');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const summaryDiv = document.getElementById('summary');
+        const resultsDiv = document.getElementById('results');
+        const testCountSpan = document.getElementById('testCount');
+        const showPassedOnly = document.getElementById('showPassedOnly');
+        const showFailedOnly = document.getElementById('showFailedOnly');
+        
+        // Visual tests
+        const visualCategorySelect = document.getElementById('visualCategorySelect');
+        const runVisualTestsBtn = document.getElementById('runVisualTests');
+        const clearVisualBtn = document.getElementById('clearVisual');
+        const visualTestsContainer = document.getElementById('visualTestsContainer');
+        
+        // Streaming demo
+        const streamingTestSelect = document.getElementById('streamingTestSelect');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const chunkSlider = document.getElementById('chunkSlider');
+        const chunkValue = document.getElementById('chunkValue');
+        const streamBtn = document.getElementById('streamBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const renderAllBtn = document.getElementById('renderAllBtn');
+        const clearStreamBtn = document.getElementById('clearStreamBtn');
+        const streamStatus = document.getElementById('streamStatus');
+        const charCount = document.getElementById('charCount');
+        const streamingRawInput = document.getElementById('streamingRawInput');
+        const streamingOutput = document.getElementById('streamingOutput');
+        const debugContent = document.getElementById('debugContent');
+        const showDebug = document.getElementById('showDebug');
+        const clearDebugBtn = document.getElementById('clearDebug');
+        
+        // Stats elements
+        const statRenders = document.getElementById('statRenders');
+        const statSkipped = document.getElementById('statSkipped');
+        const statFormulas = document.getElementById('statFormulas');
+        const statTime = document.getElementById('statTime');
+        
+        // ========================================
+        // State
+        // ========================================
+        let lastResults = null;
+        let mertex = null;
+        let streamingState = {
+            isStreaming: false,
+            isPaused: false,
+            currentIndex: 0,
+            content: '',
+            streamRenderer: null,
+            timeoutId: null,
+            startTime: 0
+        };
+        
+        // ========================================
+        // Tab Navigation
+        // ========================================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active tab button
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show corresponding content
+                const tabId = this.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.getElementById(tabId + '-tab').style.display = 'block';
+            });
+        });
+        
+        // ========================================
+        // Debug Logging
+        // ========================================
+        const logLevels = {
+            info: '💡',
+            math: '🔢',
+            render: '🎨',
+            error: '❌',
+            success: '✅'
+        };
+        
+        function log(message, level = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `debug-entry ${level}`;
+            const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${logLevels[level] || '📝'} ${message}`;
+            debugContent.appendChild(entry);
+            debugContent.scrollTop = debugContent.scrollHeight;
+        }
+        
+        // ========================================
+        // Initialize MertexMD
+        // ========================================
+        function initMertex() {
+            if (typeof MertexMD !== 'undefined') {
+                mertex = new MertexMD({
+                    breaks: true,
+                    gfm: true,
+                    katex: true,
+                    mermaid: true,
+                    highlight: true,
+                    sanitize: true,
+                    protectMath: true
+                });
+                log('MertexMD initialized successfully', 'success');
+                return true;
+            } else {
+                log('MertexMD not found - check that dist/mertex.min.js is built', 'error');
+                return false;
+            }
+        }
+        
+        // ========================================
+        // Populate Test Cases for Streaming
+        // ========================================
+        function populateTestCases() {
+            if (typeof TEST_CASES === 'undefined') {
+                log('Test cases not loaded', 'error');
+                return;
+            }
+            
+            TEST_CASES.forEach((tc, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = tc.name;
+                streamingTestSelect.appendChild(option);
+            });
+            
+            log(`Loaded ${TEST_CASES.length} test cases for streaming`, 'info');
+        }
+        
+        // ========================================
+        // Check Dependencies
+        // ========================================
+        function checkDependencies() {
+            if (typeof MathProtector === 'undefined') {
+                errorDiv.innerHTML = `
+                    <div class="error-box">
+                        <h3>❌ Dependency Error</h3>
+                        <p><strong>MathProtector is not loaded!</strong></p>
+                        <p>Make sure the mertex.md library is built:</p>
+                        <code>npm run build</code>
+                        <p>Expected file: ../../dist/mertex.umd.js</p>
+                    </div>
+                `;
+                runTestsBtn.disabled = true;
+                return false;
+            }
+            
+            if (typeof MathRenderingTests === 'undefined') {
+                errorDiv.innerHTML = `
+                    <div class="error-box">
+                        <h3>❌ Test Suite Error</h3>
+                        <p><strong>Test suite failed to load!</strong></p>
+                        <p>Make sure math-rendering.test.js is in the correct location.</p>
+                    </div>
+                `;
+                runTestsBtn.disabled = true;
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // ========================================
+        // Unit Tests
+        // ========================================
+        async function runUnitTests() {
+            runTestsBtn.disabled = true;
+            loadingDiv.style.display = 'block';
+            errorDiv.innerHTML = '';
+            summaryDiv.innerHTML = '';
+            summaryDiv.classList.remove('show');
+            resultsDiv.innerHTML = '';
+            
+            try {
+                const results = await MathRenderingTests.runAllTests();
+                lastResults = results;
+                displayResults(results);
+            } catch (error) {
+                errorDiv.innerHTML = `
+                    <div class="error-box">
+                        <h3>❌ Test Execution Error</h3>
+                        <p><strong>${error.message}</strong></p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            } finally {
+                loadingDiv.style.display = 'none';
+                runTestsBtn.disabled = false;
+            }
+        }
+        
+        function displayResults(results) {
+            const total = results.passed + results.failed;
+            const passRate = total > 0 ? ((results.passed / total) * 100).toFixed(1) : 0;
+            
+            testCountSpan.textContent = `${total} tests`;
+            
+            // Display summary
+            summaryDiv.innerHTML = `
+                <div class="summary-cards">
+                    <div class="summary-card total">
+                        <div class="number" style="color: #2196F3;">${total}</div>
+                        <div class="label">Total Tests</div>
+                    </div>
+                    <div class="summary-card passed">
+                        <div class="number" style="color: #4CAF50;">${results.passed}</div>
+                        <div class="label">Passed (${passRate}%)</div>
+                    </div>
+                    <div class="summary-card failed">
+                        <div class="number" style="color: #f44336;">${results.failed}</div>
+                        <div class="label">Failed</div>
+                    </div>
+                </div>
+            `;
+            summaryDiv.classList.add('show');
+            
+            // Group tests by category
+            const testsByCategory = {};
+            const allTests = [...MathRenderingTests.runner.tests];
+            
+            allTests.forEach(test => {
+                const category = test.name.split(':')[0].trim();
+                if (!testsByCategory[category]) {
+                    testsByCategory[category] = [];
+                }
+                
+                const error = results.errors.find(e => e.name === test.name);
+                testsByCategory[category].push({
+                    name: test.name,
+                    passed: !error,
+                    error: error ? error.error : null
+                });
+            });
+            
+            // Apply filters
+            const showPassed = !showFailedOnly.checked;
+            const showFailed = !showPassedOnly.checked;
+            
+            // Display results by category
+            let html = '';
+            Object.keys(testsByCategory).sort().forEach(category => {
+                const categoryTests = testsByCategory[category].filter(test => {
+                    if (test.passed && !showPassed) return false;
+                    if (!test.passed && !showFailed) return false;
+                    return true;
+                });
+                
+                if (categoryTests.length === 0) return;
+                
+                html += `<div class="category-header">${category}</div>`;
+                
+                categoryTests.forEach(test => {
+                    const status = test.passed ? 'pass' : 'fail';
+                    const icon = test.passed ? '✓' : '✗';
+                    const shortName = test.name.split(':').slice(1).join(':').trim();
+                    
+                    html += `
+                        <div class="test-item ${status}" data-testname="${encodeURIComponent(test.name)}">
+                            <div class="test-item-header">
+                                <div class="test-icon">${icon}</div>
+                                <div class="test-name">${shortName}</div>
+                            </div>
+                            ${test.error ? `<div class="test-error">${test.error}</div>` : ''}
+                        </div>
+                    `;
+                });
+            });
+            
+            resultsDiv.innerHTML = html;
+            
+            // Scroll to results
+            summaryDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // ========================================
+        // Visual Tests
+        // ========================================
+        function getVisualTestCases(category) {
+            if (typeof TEST_CASES === 'undefined') return [];
+            
+            const categoryMap = {
+                'currency': [0, 1, 2], // Currency tests
+                'math': [3, 4, 5], // Math tests
+                'mixed': [6, 7], // Mixed content
+                'streaming': [12], // Streaming test
+                'mermaid': [13, 14], // Mermaid tests
+                'all': TEST_CASES.map((_, i) => i)
+            };
+            
+            const indices = categoryMap[category] || categoryMap['all'];
+            return indices.map(i => TEST_CASES[i]).filter(Boolean);
+        }
+        
+        async function runVisualTests() {
+            const category = visualCategorySelect.value;
+            const testCases = getVisualTestCases(category);
+            
+            if (testCases.length === 0) {
+                visualTestsContainer.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No test cases found for this category</p>';
+                return;
+            }
+            
+            if (!mertex) {
+                if (!initMertex()) {
+                    visualTestsContainer.innerHTML = '<div class="error-box"><h3>Error</h3><p>MertexMD not initialized. Build the library first.</p></div>';
+                    return;
+                }
+            }
+            
+            let html = '';
+            
+            for (const tc of testCases) {
+                let renderedContent = '';
+                
+                try {
+                    // Create a temporary container to render
+                    const tempDiv = document.createElement('div');
+                    await mertex.renderInElement(tempDiv, tc.content);
+                    renderedContent = tempDiv.innerHTML;
+                } catch (err) {
+                    renderedContent = `<div class="error-box"><p>Render error: ${err.message}</p></div>`;
+                }
+                
+                html += `
+                    <div class="visual-test-card">
+                        <div class="visual-test-card-header">
+                            <h3>${tc.name}</h3>
+                            <span style="font-size: 0.85em; color: var(--text-muted);">${tc.description || ''}</span>
+                        </div>
+                        <div class="visual-test-card-body">
+                            <div class="visual-test-pane">
+                                <div class="visual-test-pane-header">📝 Raw Input</div>
+                                <div class="visual-test-pane-content">
+                                    <pre class="raw-input">${escapeHtml(tc.content)}</pre>
+                                </div>
+                            </div>
+                            <div class="visual-test-pane">
+                                <div class="visual-test-pane-header">💬 Rendered Output</div>
+                                <div class="visual-test-pane-content">
+                                    <div class="rendered-output">${renderedContent}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            visualTestsContainer.innerHTML = html;
+            
+            // Process any mermaid diagrams
+            try {
+                await mermaid.run({
+                    querySelector: '.rendered-output .mermaid'
+                });
+            } catch (e) {
+                console.log('Mermaid processing note:', e);
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // ========================================
+        // Streaming Simulation
+        // ========================================
+        async function startStreaming() {
+            const selectedIndex = streamingTestSelect.value;
+            if (selectedIndex === '' || typeof TEST_CASES === 'undefined') {
+                log('No test case selected', 'error');
+                return;
+            }
+            
+            const tc = TEST_CASES[parseInt(selectedIndex)];
+            const content = tc.content;
+            
+            if (!mertex) {
+                if (!initMertex()) {
+                    log('MertexMD not initialized', 'error');
+                    return;
+                }
+            }
+            
+            // Update raw input display
+            streamingRawInput.textContent = content;
+            
+            // Reset state
+            streamingState = {
+                isStreaming: true,
+                isPaused: false,
+                currentIndex: 0,
+                content: content,
+                streamRenderer: mertex.createStreamRenderer(streamingOutput),
+                timeoutId: null,
+                startTime: performance.now()
+            };
+            
+            // Update UI
+            streamingOutput.innerHTML = '';
+            setStreamStatus('streaming');
+            streamBtn.disabled = true;
+            pauseBtn.disabled = false;
+            renderAllBtn.disabled = true;
+            
+            // Reset stats
+            statRenders.textContent = '0';
+            statSkipped.textContent = '0';
+            statFormulas.textContent = '0';
+            statTime.textContent = '0ms';
+            
+            log(`Starting stream: ${content.length} chars, ${parseInt(chunkSlider.value)} chars/chunk, ${parseInt(speedSlider.value)}ms delay`, 'info');
+            
+            // Start streaming
+            await streamNextChunk();
+        }
+        
+        async function streamNextChunk() {
+            if (!streamingState.isStreaming) return;
+            
+            if (streamingState.isPaused) {
+                return;
+            }
+            
+            const chunkSize = parseInt(chunkSlider.value);
+            const speed = parseInt(speedSlider.value);
+            const { content, currentIndex, streamRenderer } = streamingState;
+            
+            if (currentIndex >= content.length) {
+                await finalizeStreaming();
+                return;
+            }
+            
+            // Get next chunk
+            const endIndex = Math.min(currentIndex + chunkSize, content.length);
+            const chunk = content.slice(currentIndex, endIndex);
+            
+            // Append chunk
+            streamRenderer.appendContent(chunk);
+            streamingState.currentIndex = endIndex;
+            
+            // Update char count
+            charCount.textContent = `${endIndex} / ${content.length} chars`;
+            
+            // Update stats
+            updateStats();
+            
+            // Schedule next chunk
+            streamingState.timeoutId = setTimeout(() => streamNextChunk(), speed);
+        }
+        
+        async function finalizeStreaming() {
+            log('Finalizing stream...', 'info');
+            setStreamStatus('complete');
+            
+            try {
+                await streamingState.streamRenderer.finalize();
+                
+                const elapsed = (performance.now() - streamingState.startTime).toFixed(0);
+                statTime.textContent = elapsed + 'ms';
+                
+                log(`Stream complete in ${elapsed}ms`, 'success');
+                
+                // Process mermaid if any
+                try {
+                    await mermaid.run({
+                        querySelector: '#streamingOutput .mermaid'
+                    });
+                } catch (e) {
+                    console.log('Mermaid note:', e);
+                }
+            } catch (err) {
+                log(`Finalize error: ${err.message}`, 'error');
+            }
+            
+            resetStreamingUI();
+        }
+        
+        function pauseStreaming() {
+            if (!streamingState.isStreaming) return;
+            
+            streamingState.isPaused = !streamingState.isPaused;
+            
+            if (streamingState.isPaused) {
+                clearTimeout(streamingState.timeoutId);
+                setStreamStatus('idle');
+                pauseBtn.textContent = '▶️ Resume';
+                log('Stream paused', 'info');
+            } else {
+                setStreamStatus('streaming');
+                pauseBtn.textContent = '⏸️ Pause';
+                log('Stream resumed', 'info');
+                streamNextChunk();
+            }
+        }
+        
+        function stopStreaming() {
+            if (streamingState.timeoutId) {
+                clearTimeout(streamingState.timeoutId);
+            }
+            streamingState.isStreaming = false;
+            streamingState.isPaused = false;
+            resetStreamingUI();
+        }
+        
+        function resetStreamingUI() {
+            streamBtn.disabled = false;
+            pauseBtn.disabled = true;
+            pauseBtn.textContent = '⏸️ Pause';
+            renderAllBtn.disabled = false;
+        }
+        
+        async function renderAll() {
+            const selectedIndex = streamingTestSelect.value;
+            if (selectedIndex === '' || typeof TEST_CASES === 'undefined') {
+                log('No test case selected', 'error');
+                return;
+            }
+            
+            const tc = TEST_CASES[parseInt(selectedIndex)];
+            const content = tc.content;
+            
+            if (!mertex) {
+                if (!initMertex()) {
+                    log('MertexMD not initialized', 'error');
+                    return;
+                }
+            }
+            
+            stopStreaming();
+            
+            // Update raw input display
+            streamingRawInput.textContent = content;
+            
+            const startTime = performance.now();
+            log('Rendering all content at once...', 'info');
+            setStreamStatus('streaming');
+            
+            try {
+                streamingOutput.innerHTML = '';
+                await mertex.renderInElement(streamingOutput, content);
+                
+                const elapsed = (performance.now() - startTime).toFixed(0);
+                statTime.textContent = elapsed + 'ms';
+                charCount.textContent = `${content.length} / ${content.length} chars`;
+                
+                log(`Rendered in ${elapsed}ms`, 'success');
+                
+                // Process mermaid
+                try {
+                    await mermaid.run({
+                        querySelector: '#streamingOutput .mermaid'
+                    });
+                } catch (e) {
+                    console.log('Mermaid note:', e);
+                }
+            } catch (err) {
+                log(`Render error: ${err.message}`, 'error');
+            }
+            
+            setStreamStatus('complete');
+        }
+        
+        function setStreamStatus(status) {
+            streamStatus.className = 'status-badge ' + status;
+            streamStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+        
+        function updateStats() {
+            if (streamingState.streamRenderer) {
+                const stats = streamingState.streamRenderer.getStats();
+                
+                if (stats && stats.incremental) {
+                    statRenders.textContent = stats.incremental.renderCount || 0;
+                    statFormulas.textContent = stats.incremental.formulasProcessed || 0;
+                }
+                
+                if (stats && stats.math) {
+                    statSkipped.textContent = stats.math.rendersSkipped || 0;
+                }
+            }
+        }
+        
+        function clearStreaming() {
+            stopStreaming();
+            streamingOutput.innerHTML = '<p class="placeholder" style="color: var(--text-muted); font-style: italic;">Output will appear here...</p>';
+            streamingRawInput.textContent = 'Select a test case to begin...';
+            charCount.textContent = '0 / 0 chars';
+            statRenders.textContent = '0';
+            statSkipped.textContent = '0';
+            statFormulas.textContent = '0';
+            statTime.textContent = '0ms';
+            setStreamStatus('idle');
+            log('Output cleared', 'info');
+        }
+        
+        // ========================================
+        // Event Listeners
+        // ========================================
+        
+        // Unit tests
+        runTestsBtn.addEventListener('click', runUnitTests);
+        consoleBtn.addEventListener('click', async function() {
+            console.clear();
+            console.log('%c🧪 Running Mertex.md Tests in Console', 'font-size: 16px; font-weight: bold; color: #667eea;');
+            await MathRenderingTests.runAllTests();
+        });
+        
+        showPassedOnly.addEventListener('change', function() {
+            if (this.checked) showFailedOnly.checked = false;
+            if (lastResults) displayResults(lastResults);
+        });
+        
+        showFailedOnly.addEventListener('change', function() {
+            if (this.checked) showPassedOnly.checked = false;
+            if (lastResults) displayResults(lastResults);
+        });
+        
+        // Visual tests
+        runVisualTestsBtn.addEventListener('click', runVisualTests);
+        clearVisualBtn.addEventListener('click', function() {
+            visualTestsContainer.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">Select a category and click "Run Visual Tests" to see rendered output</p>';
+        });
+        
+        // Streaming
+        streamingTestSelect.addEventListener('change', function() {
+            if (this.value !== '' && typeof TEST_CASES !== 'undefined') {
+                const tc = TEST_CASES[parseInt(this.value)];
+                streamingRawInput.textContent = tc.content;
+                log(`Selected test case: ${tc.name}`, 'info');
+            }
+        });
+        
+        speedSlider.addEventListener('input', function() {
+            speedValue.textContent = this.value + 'ms';
+        });
+        
+        chunkSlider.addEventListener('input', function() {
+            chunkValue.textContent = this.value + ' chars';
+        });
+        
+        streamBtn.addEventListener('click', startStreaming);
+        pauseBtn.addEventListener('click', pauseStreaming);
+        renderAllBtn.addEventListener('click', renderAll);
+        clearStreamBtn.addEventListener('click', clearStreaming);
+        
+        // Debug panel
+        showDebug.addEventListener('change', function() {
+            document.querySelector('.debug-panel').style.display = this.checked ? 'block' : 'none';
+        });
+        
+        clearDebugBtn.addEventListener('click', function() {
+            debugContent.innerHTML = '<div class="debug-entry info">[mertex.md] Debug log cleared</div>';
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (streamingState.isStreaming) {
+                        pauseStreaming();
+                    } else {
+                        startStreaming();
+                    }
+                } else if (e.key === 'r' && e.shiftKey) {
+                    e.preventDefault();
+                    renderAll();
+                }
+            }
+        });
+        
+        // ========================================
+        // Initialize
+        // ========================================
+        window.addEventListener('DOMContentLoaded', function() {
+            if (checkDependencies()) {
+                initMertex();
+                populateTestCases();
+                log('Test environment ready. Keyboard shortcuts: Ctrl+Enter to stream/pause, Ctrl+Shift+R to render all', 'info');
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

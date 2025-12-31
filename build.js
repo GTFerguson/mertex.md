@@ -13,6 +13,39 @@ const banner = `/**
  * @license MIT
  */`;
 
+// Footer that exposes backward-compatible globals for drop-in replacement
+// Note: esbuild exports getters, so we access them directly as the getters auto-invoke
+const legacyGlobalsFooter = `
+if(typeof window!=="undefined"){
+    // Main Mertex export - access both named and default exports
+    var _MertexMD = Mertex.MertexMD;
+    var _default = Mertex.default;
+    window.Mertex = _default || Mertex;
+    window.MertexMD = _MertexMD || _default;
+    
+    // Backward-compatible globals for existing code
+    // MarkdownRenderer API (used by base.html, graph-chat.js, graph-chat-dedicated.js)
+    window.MarkdownRenderer={
+        render: Mertex.renderMarkdown,
+        renderLegacy: Mertex.renderMarkdownLegacy,
+        renderInElement: Mertex.renderMarkdownInElement,
+        autoRender: Mertex.autoRenderMarkdown,
+        init: Mertex.initMarkdownRenderer,
+        mermaid: Mertex.MermaidHandler || {},
+        katex: Mertex.KaTeXHandler || {}
+    };
+    
+    // Individual class globals (used by graph-chat-dedicated.js)
+    window.MathProtector = Mertex.MathProtector;
+    window.IncrementalContentRenderer = Mertex.IncrementalContentRenderer;
+    window.StreamingMathRenderer = Mertex.StreamingMathRenderer;
+    window.MermaidHandler = Mertex.MermaidHandler;
+    window.KaTeXHandler = Mertex.KaTeXHandler;
+    
+    console.log('[mertex.md] Library loaded with backward-compatible globals');
+}
+`;
+
 const commonOptions = {
     entryPoints: ['src/index.js'],
     bundle: true,
@@ -40,9 +73,7 @@ async function build() {
         format: 'iife',
         globalName: 'Mertex',
         platform: 'browser',
-        footer: {
-            js: 'if(typeof window!=="undefined"){window.Mertex=Mertex.default||Mertex;}'
-        }
+        footer: { js: legacyGlobalsFooter }
     });
     console.log('✓ UMD bundle built');
     
@@ -54,13 +85,12 @@ async function build() {
         globalName: 'Mertex',
         platform: 'browser',
         minify: true,
-        footer: {
-            js: 'if(typeof window!=="undefined"){window.Mertex=Mertex.default||Mertex;}'
-        }
+        footer: { js: legacyGlobalsFooter }
     });
     console.log('✓ Minified bundle built');
     
-    // Bundled version with all deps (for direct script tag usage)
+    // Bundled version with marked (for direct script tag usage)
+    // Note: KaTeX, Mermaid, highlight.js are large - keep them external
     await esbuild.build({
         entryPoints: ['src/index.js'],
         bundle: true,
@@ -70,10 +100,8 @@ async function build() {
         globalName: 'Mertex',
         platform: 'browser',
         minify: true,
-        external: [], // Include all deps
-        footer: {
-            js: 'if(typeof window!=="undefined"){window.Mertex=Mertex.default||Mertex;}'
-        }
+        external: ['katex', 'mermaid', 'highlight.js'], // Keep large libs external
+        footer: { js: legacyGlobalsFooter }
     });
     console.log('✓ Bundled version built');
     

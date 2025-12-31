@@ -3,6 +3,7 @@
  */
 
 import { hashBase36 } from '../utils/hash.js';
+import { looksLikeCurrency } from '../utils/currency-detector.js';
 
 function getRenderMathInElement() {
     if (typeof renderMathInElement !== 'undefined') return renderMathInElement;
@@ -15,6 +16,8 @@ export class StreamingMathRenderer {
         this.seenFormulas = new Set();
         this.lastContentHash = '';
         this.consecutiveSkips = 0;
+        this.lastCharWasWhitespace = false;
+        this.accumulatedContent = '';
         
         this.delimiters = [
             { left: '$$', right: '$$', display: true },
@@ -32,6 +35,14 @@ export class StreamingMathRenderer {
     
     processChunk(content, targetElement) {
         this.stats.rendersAttempted++;
+        
+        // Track whitespace at chunk boundaries for proper spacing
+        if (this.lastCharWasWhitespace && /^\S/.test(content) && this.accumulatedContent.length > 0) {
+            // Whitespace tracking helps with boundary issues
+        }
+        
+        this.accumulatedContent += content;
+        this.lastCharWasWhitespace = /\s$/.test(content);
         
         const currentFormulas = this.extractFormulaSignatures(content);
         const newFormulas = currentFormulas.filter(sig => !this.seenFormulas.has(sig));
@@ -53,15 +64,6 @@ export class StreamingMathRenderer {
         return rendered;
     }
     
-    looksLikeCurrency(content) {
-        if (/[\r\n]\s*[-*+#]/.test(content)) return true;
-        if (/[\\^_{}]|\\[a-z]+/i.test(content)) return false;
-        if (/[a-z]/i.test(content) && /[+\-*/=]/.test(content)) return false;
-        if (/^[a-z][0-9]*$/i.test(content.trim())) return false;
-        if (/^[\d.,\s$\-/]+(\s*(per|unit|each|k|m|b|million|billion|thousand))?$/i.test(content)) return true;
-        return /^[\d.,]+$/.test(content);
-    }
-    
     isInsideBackticks(text, pos) {
         let backtickCount = 0;
         for (let i = 0; i < pos; i++) {
@@ -73,25 +75,53 @@ export class StreamingMathRenderer {
     extractFormulaSignatures(content) {
         const signatures = [];
         
+        // First, skip currency ranges entirely
+        // Replace them temporarily so they don't interfere
+        const currencyRangePattern = /\$(\d[\d,]*(?:\.\d+)?)\s*-\s*\$(\d[\d,]*(?:\.\d+)?)/g;
+        const cleanContent = content.replace(currencyRangePattern, '___CURRENCY_RANGE___');
+        
         for (const delim of this.delimiters) {
             let searchPos = 0;
             
             while (true) {
-                const leftPos = content.indexOf(delim.left, searchPos);
+                const leftPos = cleanContent.indexOf(delim.left, searchPos);
                 if (leftPos === -1) break;
                 
-                if (delim.left === '$' && this.isInsideBackticks(content, leftPos)) {
+                if (delim.left === '$' && this.isInsideBackticks(cleanContent, leftPos)) {
                     searchPos = leftPos + 1;
                     continue;
                 }
                 
-                const rightPos = content.indexOf(delim.right, leftPos + delim.left.length);
+                // For single $, handle escaped dollars inside math
+                let rightPos;
+                if (delim.left === '$') {
+                    let tempPos = leftPos + delim.left.length;
+                    rightPos = -1;
+                    
+                    while (tempPos < cleanContent.length) {
+                        const foundPos = cleanContent.indexOf(delim.right, tempPos);
+                        if (foundPos === -1) break;
+                        
+                        // Check if this $ is escaped
+                        if (foundPos > 0 && cleanContent[foundPos - 1] === '\\') {
+                            tempPos = foundPos + 1;
+                            continue;
+                        }
+                        
+                        rightPos = foundPos;
+                        break;
+                    }
+                } else {
+                    rightPos = cleanContent.indexOf(delim.right, leftPos + delim.left.length);
+                }
+                
                 if (rightPos === -1) break;
                 
-                const formula = content.substring(leftPos + delim.left.length, rightPos);
+                const formula = cleanContent.substring(leftPos + delim.left.length, rightPos);
                 
                 if (formula.trim()) {
-                    if (delim.left === '$' && this.looksLikeCurrency(formula)) {
+                    // Use shared currency detection utility
+                    if (delim.left === '$' && looksLikeCurrency(formula)) {
                         searchPos = leftPos + 1;
                         continue;
                     }
@@ -139,6 +169,8 @@ export class StreamingMathRenderer {
         this.seenFormulas.clear();
         this.lastContentHash = '';
         this.consecutiveSkips = 0;
+        this.lastCharWasWhitespace = false;
+        this.accumulatedContent = '';
         this.stats = {
             rendersAttempted: 0,
             rendersSkipped: 0,

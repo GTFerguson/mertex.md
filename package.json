@@ -22,6 +22,8 @@
   ],
   "scripts": {
     "build": "node build.js",
+    "test": "node test/unit/run-tests-node.cjs",
+    "test:browser": "open test/unit/test-runner.html || xdg-open test/unit/test-runner.html || start test/unit/test-runner.html",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -45,11 +47,12 @@
   },
   "homepage": "https://github.com/GTFerguson/mertex.md#readme",
   "devDependencies": {
-    "esbuild": "^0.19.0"
+    "esbuild": "^0.19.0",
+    "jsdom": "^27.4.0"
   },
   "peerDependencies": {
-    "marked": ">=9.0.0",
-    "dompurify": ">=3.0.0"
+    "dompurify": ">=3.0.0",
+    "marked": ">=9.0.0"
   },
   "peerDependenciesMeta": {
     "katex": {

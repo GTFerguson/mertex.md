@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mertex.md - Streaming Test Environment</title>
+    
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    
+    <!-- Highlight.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+    
+    <!-- Local styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧮 mertex.md Streaming Test</h1>
+            <p class="subtitle">Test environment for markdown rendering with math and diagrams</p>
+        </header>
+        
+        <main class="panels">
+            <!-- Input Panel -->
+            <section class="panel input-panel">
+                <div class="panel-header">
+                    <h2>📝 Input</h2>
+                    <div class="test-cases">
+                        <select id="testCaseSelect">
+                            <option value="">-- Select Test Case --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <textarea id="inputArea" placeholder="Enter markdown content here..."></textarea>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Speed (ms/chunk):</label>
+                        <input type="range" id="speedSlider" min="5" max="200" value="30">
+                        <span id="speedValue">30ms</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Chunk size:</label>
+                        <input type="range" id="chunkSlider" min="1" max="20" value="3">
+                        <span id="chunkValue">3 chars</span>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="streamBtn" class="btn btn-primary">▶ Stream</button>
+                        <button id="pauseBtn" class="btn btn-secondary" disabled>⏸ Pause</button>
+                        <button id="renderAllBtn" class="btn btn-secondary">⚡ Render All</button>
+                        <button id="clearBtn" class="btn btn-danger">🗑 Clear</button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Output Panel -->
+            <section class="panel output-panel">
+                <div class="panel-header">
+                    <h2>💬 Output</h2>
+                    <div class="status">
+                        <span id="streamStatus" class="status-badge idle">Idle</span>
+                        <span id="charCount">0 / 0 chars</span>
+                    </div>
+                </div>
+                
+                <div class="chat-container">
+                    <div class="chat-message assistant">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content" id="outputArea">
+                            <p class="placeholder">Output will appear here...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <!-- Debug Panel -->
+        <section class="panel debug-panel" id="debugPanel">
+            <div class="panel-header">
+                <h2>🔍 Debug Console</h2>
+                <div class="debug-controls">
+                    <label>
+                        <input type="checkbox" id="showDebug" checked> Show
+                    </label>
+                    <button id="clearDebug" class="btn btn-small">Clear</button>
+                </div>
+            </div>
+            
+            <div class="debug-content" id="debugContent">
+                <div class="debug-entry info">[mertex.md] Test environment initialized</div>
+            </div>
+            
+            <div class="stats-bar">
+                <div class="stat">
+                    <span class="stat-label">Renders:</span>
+                    <span id="statRenders" class="stat-value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Skipped:</span>
+                    <span id="statSkipped" class="stat-value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Formulas:</span>
+                    <span id="statFormulas" class="stat-value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Time:</span>
+                    <span id="statTime" class="stat-value">0ms</span>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <!-- Dependencies (loaded in order) -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/lib/marked.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+    
+    <!-- Local mertex.md library -->
+    <script src="../dist/mertex.min.js"></script>
+    
+    <!-- Test cases -->
+    <script src="test-cases.js"></script>
+    
+    <!-- Main test script -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // ========================================
+        // DOM Elements
+        // ========================================
+        const inputArea = document.getElementById('inputArea');
+        const outputArea = document.getElementById('outputArea');
+        const testCaseSelect = document.getElementById('testCaseSelect');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const chunkSlider = document.getElementById('chunkSlider');
+        const chunkValue = document.getElementById('chunkValue');
+        const streamBtn = document.getElementById('streamBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const renderAllBtn = document.getElementById('renderAllBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const streamStatus = document.getElementById('streamStatus');
+        const charCount = document.getElementById('charCount');
+        const debugContent = document.getElementById('debugContent');
+        const showDebug = document.getElementById('showDebug');
+        const clearDebug = document.getElementById('clearDebug');
+        const debugPanel = document.getElementById('debugPanel');
+        
+        // Stats elements
+        const statRenders = document.getElementById('statRenders');
+        const statSkipped = document.getElementById('statSkipped');
+        const statFormulas = document.getElementById('statFormulas');
+        const statTime = document.getElementById('statTime');
+        
+        // ========================================
+        // State
+        // ========================================
+        let streamingState = {
+            isStreaming: false,
+            isPaused: false,
+            currentIndex: 0,
+            content: '',
+            streamRenderer: null,
+            timeoutId: null,
+            startTime: 0
+        };
+        
+        // ========================================
+        // Debug Logging
+        // ========================================
+        const logLevels = {
+            info: '💡',
+            math: '🔢',
+            mermaid: '📊',
+            render: '🎨',
+            error: '❌',
+            warning: '⚠️',
+            success: '✅'
+        };
+        
+        function log(message, level = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `debug-entry ${level}`;
+            const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${logLevels[level] || '📝'} ${message}`;
+            debugContent.appendChild(entry);
+            debugContent.scrollTop = debugContent.scrollHeight;
+        }
+        
+        // Intercept console.log for mertex debug messages
+        const originalConsoleLog = console.log;
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            const message = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+            if (message.includes('[')) {
+                if (message.includes('IncrementalRenderer')) {
+                    log(message.replace('[IncrementalRenderer]', ''), 'render');
+                } else if (message.includes('StreamingMath')) {
+                    log(message.replace('[StreamingMath]', ''), 'math');
+                } else if (message.includes('MathProtector')) {
+                    log(message.replace('[MathProtector]', ''), 'math');
+                }
+            }
+        };
+        
+        // ========================================
+        // Initialize MertexMD
+        // ========================================
+        let mertex;
+        
+        function initMertex() {
+            if (typeof MertexMD !== 'undefined') {
+                mertex = new MertexMD({
+                    breaks: true,
+                    gfm: true,
+                    katex: true,
+                    mermaid: true,
+                    highlight: true,
+                    sanitize: true,
+                    protectMath: true
+                });
+                log('MertexMD initialized successfully', 'success');
+            } else {
+                log('MertexMD not found - check that dist/mertex.min.js is built', 'error');
+            }
+            
+            // Initialize mermaid
+            if (typeof mermaid !== 'undefined') {
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: 'dark',
+                    securityLevel: 'loose'
+                });
+                log('Mermaid initialized', 'success');
+            }
+        }
+        
+        // ========================================
+        // Test Cases
+        // ========================================
+        function populateTestCases() {
+            if (typeof TEST_CASES === 'undefined') {
+                log('Test cases not loaded', 'warning');
+                return;
+            }
+            
+            TEST_CASES.forEach((tc, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = tc.name;
+                testCaseSelect.appendChild(option);
+            });
+            
+            log(`Loaded ${TEST_CASES.length} test cases`, 'info');
+        }
+        
+        testCaseSelect.addEventListener('change', function() {
+            if (this.value !== '' && typeof TEST_CASES !== 'undefined') {
+                const tc = TEST_CASES[parseInt(this.value)];
+                inputArea.value = tc.content;
+                log(`Selected test case: ${tc.name}`, 'info');
+            }
+        });
+        
+        // ========================================
+        // Slider Controls
+        // ========================================
+        speedSlider.addEventListener('input', function() {
+            speedValue.textContent = this.value + 'ms';
+        });
+        
+        chunkSlider.addEventListener('input', function() {
+            chunkValue.textContent = this.value + ' chars';
+        });
+        
+        // ========================================
+        // Streaming Simulation
+        // ========================================
+        async function simulateStreaming() {
+            const content = inputArea.value;
+            if (!content.trim()) {
+                log('No content to stream', 'warning');
+                return;
+            }
+            
+            if (!mertex) {
+                log('MertexMD not initialized', 'error');
+                return;
+            }
+            
+            // Reset state
+            streamingState = {
+                isStreaming: true,
+                isPaused: false,
+                currentIndex: 0,
+                content: content,
+                streamRenderer: mertex.createStreamRenderer(outputArea),
+                timeoutId: null,
+                startTime: performance.now()
+            };
+            
+            // Update UI
+            outputArea.innerHTML = '';
+            setStatus('streaming');
+            streamBtn.disabled = true;
+            pauseBtn.disabled = false;
+            renderAllBtn.disabled = true;
+            
+            log(`Starting stream: ${content.length} chars, ${parseInt(chunkSlider.value)} chars/chunk, ${parseInt(speedSlider.value)}ms delay`, 'info');
+            
+            // Start streaming
+            await streamNextChunk();
+        }
+        
+        async function streamNextChunk() {
+            if (!streamingState.isStreaming) return;
+            
+            if (streamingState.isPaused) {
+                return; // Will resume when unpaused
+            }
+            
+            const chunkSize = parseInt(chunkSlider.value);
+            const speed = parseInt(speedSlider.value);
+            const { content, currentIndex, streamRenderer } = streamingState;
+            
+            if (currentIndex >= content.length) {
+                // Streaming complete
+                await finalizeStreaming();
+                return;
+            }
+            
+            // Get next chunk
+            const endIndex = Math.min(currentIndex + chunkSize, content.length);
+            const chunk = content.slice(currentIndex, endIndex);
+            
+            // Append chunk
+            streamRenderer.appendContent(chunk);
+            streamingState.currentIndex = endIndex;
+            
+            // Update char count
+            charCount.textContent = `${endIndex} / ${content.length} chars`;
+            
+            // Update stats
+            updateStats();
+            
+            // Schedule next chunk
+            streamingState.timeoutId = setTimeout(() => streamNextChunk(), speed);
+        }
+        
+        async function finalizeStreaming() {
+            log('Finalizing stream...', 'info');
+            setStatus('finalizing');
+            
+            try {
+                await streamingState.streamRenderer.finalize();
+                
+                const elapsed = (performance.now() - streamingState.startTime).toFixed(0);
+                statTime.textContent = elapsed + 'ms';
+                
+                log(`Stream complete in ${elapsed}ms`, 'success');
+            } catch (err) {
+                log(`Finalize error: ${err.message}`, 'error');
+            }
+            
+            resetStreamingUI();
+        }
+        
+        function pauseStreaming() {
+            if (!streamingState.isStreaming) return;
+            
+            streamingState.isPaused = !streamingState.isPaused;
+            
+            if (streamingState.isPaused) {
+                clearTimeout(streamingState.timeoutId);
+                setStatus('paused');
+                pauseBtn.textContent = '▶ Resume';
+                log('Stream paused', 'info');
+            } else {
+                setStatus('streaming');
+                pauseBtn.textContent = '⏸ Pause';
+                log('Stream resumed', 'info');
+                streamNextChunk();
+            }
+        }
+        
+        function stopStreaming() {
+            if (streamingState.timeoutId) {
+                clearTimeout(streamingState.timeoutId);
+            }
+            streamingState.isStreaming = false;
+            streamingState.isPaused = false;
+            resetStreamingUI();
+        }
+        
+        function resetStreamingUI() {
+            streamBtn.disabled = false;
+            pauseBtn.disabled = true;
+            pauseBtn.textContent = '⏸ Pause';
+            renderAllBtn.disabled = false;
+            setStatus('idle');
+        }
+        
+        // ========================================
+        // Render All At Once
+        // ========================================
+        async function renderAll() {
+            const content = inputArea.value;
+            if (!content.trim()) {
+                log('No content to render', 'warning');
+                return;
+            }
+            
+            if (!mertex) {
+                log('MertexMD not initialized', 'error');
+                return;
+            }
+            
+            stopStreaming();
+            
+            const startTime = performance.now();
+            log('Rendering all content at once...', 'info');
+            setStatus('rendering');
+            
+            try {
+                outputArea.innerHTML = '';
+                await mertex.renderInElement(outputArea, content);
+                
+                const elapsed = (performance.now() - startTime).toFixed(0);
+                statTime.textContent = elapsed + 'ms';
+                charCount.textContent = `${content.length} / ${content.length} chars`;
+                
+                log(`Rendered in ${elapsed}ms`, 'success');
+            } catch (err) {
+                log(`Render error: ${err.message}`, 'error');
+            }
+            
+            setStatus('idle');
+        }
+        
+        // ========================================
+        // Helper Functions
+        // ========================================
+        function setStatus(status) {
+            streamStatus.className = 'status-badge ' + status;
+            streamStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+        
+        function updateStats() {
+            if (streamingState.streamRenderer) {
+                const stats = streamingState.streamRenderer.getStats();
+                
+                if (stats.incremental) {
+                    statRenders.textContent = stats.incremental.renderCount;
+                    statFormulas.textContent = stats.incremental.formulasProcessed;
+                }
+                
+                if (stats.math) {
+                    statSkipped.textContent = stats.math.rendersSkipped;
+                }
+            }
+        }
+        
+        function clearOutput() {
+            stopStreaming();
+            outputArea.innerHTML = '<p class="placeholder">Output will appear here...</p>';
+            charCount.textContent = '0 / 0 chars';
+            statRenders.textContent = '0';
+            statSkipped.textContent = '0';
+            statFormulas.textContent = '0';
+            statTime.textContent = '0ms';
+            log('Output cleared', 'info');
+        }
+        
+        // ========================================
+        // Debug Panel Controls
+        // ========================================
+        showDebug.addEventListener('change', function() {
+            debugPanel.style.display = this.checked ? 'flex' : 'none';
+        });
+        
+        clearDebug.addEventListener('click', function() {
+            debugContent.innerHTML = '<div class="debug-entry info">[mertex.md] Debug log cleared</div>';
+        });
+        
+        // ========================================
+        // Event Listeners
+        // ========================================
+        streamBtn.addEventListener('click', simulateStreaming);
+        pauseBtn.addEventListener('click', pauseStreaming);
+        renderAllBtn.addEventListener('click', renderAll);
+        clearBtn.addEventListener('click', clearOutput);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (streamingState.isStreaming) {
+                        pauseStreaming();
+                    } else {
+                        simulateStreaming();
+                    }
+                } else if (e.key === 'r' && e.shiftKey) {
+                    e.preventDefault();
+                    renderAll();
+                }
+            }
+        });
+        
+        // ========================================
+        // Initialize
+        // ========================================
+        window.addEventListener('DOMContentLoaded', function() {
+            initMertex();
+            populateTestCases();
+            
+            // Load first test case by default
+            if (typeof TEST_CASES !== 'undefined' && TEST_CASES.length > 0) {
+                inputArea.value = TEST_CASES[0].content;
+                testCaseSelect.value = '0';
+            }
+            
+            log('Keyboard shortcuts: Ctrl+Enter to stream/pause, Ctrl+Shift+R to render all', 'info');
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -58,7 +58,7 @@ export function renderMarkdown(text, options = {}) {
     }
     
     if (config.protectMath) {
-        const protector = new MathProtector({ renderOnRestore: config.katex });
+        const protector = new MathProtector({ renderOnRestore: config.katex, debug: config.debug });
         const result = protector.protect(processedText);
         processedText = result.protected;
         mathMap = result.mathMap;
@@ -142,8 +142,11 @@ export async function renderMarkdownInElement(element, options = {}) {
         catch (err) { console.error('[MarkdownRenderer] KaTeX block error:', err); }
     }
     
+    // Only run KaTeX auto-render if MathProtector is NOT enabled
+    // When protectMath is true, MathProtector already handled all math expressions
+    // Running auto-render again would incorrectly pick up currency values like $50
     const renderMath = getRenderMathInElement();
-    if (options.katex !== false && renderMath) {
+    if (options.katex !== false && options.protectMath === false && renderMath) {
         try {
             renderMath(element, {
                 delimiters: [
