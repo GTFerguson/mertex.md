@@ -11,6 +11,7 @@ import { StreamingMathRenderer } from './handlers/streaming-math-renderer.js';
 
 export class MertexMD {
     constructor(options = {}) {
+        const { selfCorrect, ...rest } = options;
         this.options = {
             breaks: true,
             gfm: true,
@@ -21,29 +22,35 @@ export class MertexMD {
             sanitize: true,
             protectMath: true,
             renderOnRestore: true,
-            ...options
+            ...rest
         };
+        if (selfCorrect) {
+            this.options.selfCorrect = {
+                fix: selfCorrect.fix,
+                maxRetries: Math.min(selfCorrect.maxRetries ?? 1, 3)
+            };
+        }
     }
     
     /**
      * Render markdown to HTML string
      * @param {string} markdown - Markdown content
      * @param {Object} options - Override options for this render
-     * @returns {string} HTML string
+     * @returns {Promise<string>} HTML string
      */
-    render(markdown, options = {}) {
+    async render(markdown, options = {}) {
         const config = { ...this.options, ...options };
-        const result = renderMarkdown(markdown, config);
+        const result = await renderMarkdown(markdown, config);
         return typeof result === 'object' ? result.html : result;
     }
-    
+
     /**
      * Render markdown with full result including maps
      * @param {string} markdown - Markdown content
      * @param {Object} options - Override options for this render
-     * @returns {Object} { html, mermaidMap, katexMap }
+     * @returns {Promise<Object>} { html, mermaidMap, katexMap }
      */
-    renderFull(markdown, options = {}) {
+    async renderFull(markdown, options = {}) {
         const config = { ...this.options, ...options };
         return renderMarkdown(markdown, config);
     }
@@ -112,34 +119,34 @@ class StreamRenderer {
     /**
      * Append content chunk and re-render
      * @param {string} chunk - New content to append
-     * @returns {boolean} True if content was updated
+     * @returns {Promise<boolean>} True if content was updated
      */
-    appendContent(chunk) {
+    async appendContent(chunk) {
         if (!chunk) return false;
-        
+
         this.content += chunk;
-        
-        const updated = this.incrementalRenderer.appendNewContent(
+
+        const updated = await this.incrementalRenderer.appendNewContent(
             this.targetElement,
             this.content,
             (md, opts) => renderMarkdown(md, { ...this.options, ...opts })
         );
-        
+
         if (updated) {
             this.streamingMathRenderer.processChunk(this.content, this.targetElement);
         }
-        
+
         return updated;
     }
-    
+
     /**
      * Set full content (replaces existing)
      * @param {string} content - Full content
-     * @returns {boolean} True if content was updated
+     * @returns {Promise<boolean>} True if content was updated
      */
-    setContent(content) {
+    async setContent(content) {
         this.content = content || '';
-        
+
         return this.incrementalRenderer.appendNewContent(
             this.targetElement,
             this.content,
@@ -154,14 +161,14 @@ class StreamRenderer {
         // Remove streaming cursor
         const cursor = this.targetElement.querySelector('.streaming-cursor');
         if (cursor) cursor.remove();
-        
+
         // Final math render
         this.streamingMathRenderer.finalRender(this.targetElement);
-        
+
         // Render mermaid diagrams
-        const result = renderMarkdown(this.content, this.options);
+        const result = await renderMarkdown(this.content, this.options);
         if (result.mermaidMap && result.mermaidMap.size > 0) {
-            await MermaidHandler.renderInElement(this.targetElement, result.mermaidMap);
+            await MermaidHandler.renderInElement(this.targetElement, result.mermaidMap, this.options.selfCorrect);
         }
     }
     

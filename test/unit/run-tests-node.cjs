@@ -90,6 +90,7 @@ try {
     const mathProtectorCJS = mathProtectorCode
         .replace(/import\s*{\s*encodeBase64\s*,\s*decodeBase64\s*}\s*from\s*['"].*['"];?\n?/g, '')
         .replace(/import\s*{\s*looksLikeCurrency\s*,\s*isCurrencyRange\s*}\s*from\s*['"].*['"];?\n?/g, '')
+        .replace(/import\s*{\s*selfCorrectRender\s*}\s*from\s*['"].*['"];?\n?/g, '')
         .replace(/export\s+class\s+MathProtector/g, 'class MathProtector')
         .replace(/export\s+default\s+MathProtector;?/g, '');
     

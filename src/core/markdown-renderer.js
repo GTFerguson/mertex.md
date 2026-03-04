@@ -30,7 +30,7 @@ function getRenderMathInElement() {
     return null;
 }
 
-export function renderMarkdown(text, options = {}) {
+export async function renderMarkdown(text, options = {}) {
     if (!text) return { html: '', mermaidMap: new Map(), katexMap: new Map() };
     
     const defaults = {
@@ -113,14 +113,14 @@ export function renderMarkdown(text, options = {}) {
     
     if (mathMap.size > 0) {
         const protector = new MathProtector({ renderOnRestore: config.katex });
-        html = protector.restore(html, mathMap);
+        html = await protector.restore(html, mathMap, config.selfCorrect);
     }
-    
+
     return { html, mermaidMap, katexMap };
 }
 
-export function renderMarkdownLegacy(text, options = {}) {
-    const result = renderMarkdown(text, options);
+export async function renderMarkdownLegacy(text, options = {}) {
+    const result = await renderMarkdown(text, options);
     return result.html || result;
 }
 
@@ -128,7 +128,7 @@ export async function renderMarkdownInElement(element, options = {}) {
     if (!element) return;
     
     const markdown = element.textContent || element.innerText;
-    const result = renderMarkdown(markdown, options);
+    const result = await renderMarkdown(markdown, options);
     
     const html = typeof result === 'object' ? result.html : result;
     const mermaidMap = typeof result === 'object' ? result.mermaidMap : new Map();
@@ -138,7 +138,7 @@ export async function renderMarkdownInElement(element, options = {}) {
     element.classList.add('markdown-rendered');
     
     if (options.katexBlocks !== false && katexMap && katexMap.size > 0) {
-        try { KaTeXHandler.renderInElement(element, katexMap); }
+        try { await KaTeXHandler.renderInElement(element, katexMap, options.selfCorrect); }
         catch (err) { console.error('[MarkdownRenderer] KaTeX block error:', err); }
     }
     
@@ -162,7 +162,7 @@ export async function renderMarkdownInElement(element, options = {}) {
     }
     
     if (options.mermaid !== false && mermaidMap && mermaidMap.size > 0) {
-        try { await MermaidHandler.renderInElement(element, mermaidMap); }
+        try { await MermaidHandler.renderInElement(element, mermaidMap, options.selfCorrect); }
         catch (err) { console.error('[MarkdownRenderer] Mermaid error:', err); }
     }
 }

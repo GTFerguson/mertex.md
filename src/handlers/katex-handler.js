@@ -3,6 +3,7 @@
  */
 
 import { hashCode } from '../utils/hash.js';
+import { selfCorrectRender } from './self-correct.js';
 
 function getKaTeX() {
     if (typeof katex !== 'undefined') return katex;
@@ -43,40 +44,67 @@ export const KaTeXHandler = {
         };
     },
     
-    renderInElement: function(element, katexMap) {
+    renderInElement: async function(element, katexMap, selfCorrect) {
         const placeholders = element.querySelectorAll('.katex-placeholder');
         if (placeholders.length === 0) return 0;
-        
+
         const katexLib = getKaTeX();
         if (!katexLib || !katexMap || katexMap.size === 0) return 0;
-        
+
         let renderedCount = 0;
-        
+
         for (const placeholder of placeholders) {
             const id = placeholder.getAttribute('data-katex-id');
             const info = katexMap.get(id);
             if (!info) continue;
-            
+
             try {
                 const container = document.createElement('div');
                 container.className = info.display ? 'katex-display-wrapper' : 'katex-inline-wrapper';
-                
+
                 const rendered = katexLib.renderToString(info.code, {
                     displayMode: info.display,
-                    throwOnError: false,
+                    throwOnError: true,
                     trust: true,
                     strict: false,
                     output: 'htmlAndMathml'
                 });
-                
+
                 container.innerHTML = rendered;
                 placeholder.replaceWith(container);
                 renderedCount++;
             } catch (err) {
-                console.error('[KaTeXHandler] Failed to render:', err);
+                if (selfCorrect?.fix) {
+                    placeholder.classList.add('mertex-fixing');
+                    const result = await selfCorrectRender(
+                        info.code, 'katex', err.message || String(err),
+                        async (corrected) => {
+                            return katexLib.renderToString(corrected, {
+                                displayMode: info.display,
+                                throwOnError: true,
+                                trust: true,
+                                strict: false,
+                                output: 'htmlAndMathml'
+                            });
+                        },
+                        selfCorrect
+                    );
+                    placeholder.classList.remove('mertex-fixing');
+                    if (result.success) {
+                        const container = document.createElement('div');
+                        container.className = info.display ? 'katex-display-wrapper' : 'katex-inline-wrapper';
+                        container.innerHTML = result.result;
+                        placeholder.replaceWith(container);
+                        renderedCount++;
+                    } else {
+                        console.error('[KaTeXHandler] Failed to render after self-correct:', err);
+                    }
+                } else {
+                    console.error('[KaTeXHandler] Failed to render:', err);
+                }
             }
         }
-        
+
         return renderedCount;
     },
     

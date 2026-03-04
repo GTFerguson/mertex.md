@@ -6,6 +6,7 @@
  */
 
 import { hashCode } from '../utils/hash.js';
+import { selfCorrectRender } from './self-correct.js';
 
 /**
  * Check if Mermaid library is available
@@ -93,44 +94,66 @@ export const MermaidHandler = {
         };
     },
     
-    renderInElement: async function(element, mermaidMap) {
+    renderInElement: async function(element, mermaidMap, selfCorrect) {
         const placeholders = element.querySelectorAll('.mermaid-placeholder');
         if (placeholders.length === 0) return 0;
-        
+
         const mermaidLib = getMermaid();
         if (!mermaidLib) {
             console.warn('[MermaidHandler] Mermaid library not available');
             return 0;
         }
-        
+
         if (!mermaidMap || mermaidMap.size === 0) {
             console.warn('[MermaidHandler] No mermaid map provided');
             return 0;
         }
-        
+
         let renderedCount = 0;
-        
+
         for (const placeholder of placeholders) {
             const id = placeholder.getAttribute('data-mermaid-id');
             const code = mermaidMap.get(id);
-            
+
             if (!code) continue;
-            
+
             try {
                 const diagramId = 'mermaid-diagram-' + Date.now() + '-' + renderedCount;
                 const container = document.createElement('div');
                 container.className = 'mermaid-container';
                 container.id = diagramId;
-                
+
                 const { svg } = await mermaidLib.render(diagramId + '-svg', code);
                 container.innerHTML = svg;
                 placeholder.replaceWith(container);
                 renderedCount++;
             } catch (err) {
-                console.error('[MermaidHandler] Failed to render:', err);
+                if (selfCorrect?.fix) {
+                    placeholder.classList.add('mertex-fixing');
+                    const result = await selfCorrectRender(
+                        code, 'mermaid', err.message || String(err),
+                        async (corrected) => {
+                            const retryId = 'mermaid-diagram-' + Date.now() + '-retry-' + renderedCount;
+                            return (await mermaidLib.render(retryId + '-svg', corrected)).svg;
+                        },
+                        selfCorrect
+                    );
+                    placeholder.classList.remove('mertex-fixing');
+                    if (result.success) {
+                        const container = document.createElement('div');
+                        container.className = 'mermaid-container';
+                        container.innerHTML = result.result;
+                        placeholder.replaceWith(container);
+                        renderedCount++;
+                    } else {
+                        console.error('[MermaidHandler] Failed to render after self-correct:', err);
+                    }
+                } else {
+                    console.error('[MermaidHandler] Failed to render:', err);
+                }
             }
         }
-        
+
         return renderedCount;
     },
     

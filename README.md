@@ -10,6 +10,7 @@ A JavaScript library for rendering Markdown with LaTeX math (KaTeX) and Mermaid 
 - **Mermaid Diagrams**: Renders mermaid code blocks as SVG diagrams
 - **Streaming Support**: Optimized incremental rendering for real-time content
 - **XSS Protection**: Built-in HTML sanitization via DOMPurify
+- **Self-Correcting Render**: Pluggable callback to fix broken mermaid/KaTeX via LLM or other means
 - **Syntax Highlighting**: Code block highlighting via highlight.js
 
 ## Installation
@@ -26,7 +27,7 @@ npm install mertex.md
 import { MertexMD } from 'mertex.md';
 
 const renderer = new MertexMD();
-const html = renderer.render('# Hello **World**\n\n$E = mc^2$');
+const html = await renderer.render('# Hello **World**\n\n$E = mc^2$');
 document.getElementById('content').innerHTML = html;
 ```
 
@@ -40,12 +41,12 @@ const targetElement = document.getElementById('content');
 const stream = renderer.createStreamRenderer(targetElement);
 
 // As chunks arrive from your streaming source:
-stream.appendContent('# Hello ');
-stream.appendContent('**World**\n\n');
-stream.appendContent('$E = mc^2$');
+await stream.appendContent('# Hello ');
+await stream.appendContent('**World**\n\n');
+await stream.appendContent('$E = mc^2$');
 
 // When streaming completes:
-stream.finalize();
+await stream.finalize();
 
 // Reset for new content:
 stream.reset();
@@ -67,7 +68,9 @@ stream.reset();
 
 <script>
   const renderer = new MertexMD.default();
-  const html = renderer.render('# Hello $E=mc^2$');
+  renderer.render('# Hello $E=mc^2$').then(html => {
+    document.getElementById('content').innerHTML = html;
+  });
 </script>
 ```
 
@@ -79,19 +82,25 @@ stream.reset();
 
 ```javascript
 const renderer = new MertexMD({
-  breaks: true,        // Convert line breaks to <br>
-  gfm: true,           // GitHub Flavored Markdown
-  headerIds: true,     // Add IDs to headers
-  katex: true,         // Enable KaTeX math rendering
-  mermaid: true,       // Enable Mermaid diagram rendering
-  highlight: true,     // Enable syntax highlighting
-  sanitize: true,      // Enable HTML sanitization
-  protectMath: true,   // Protect math from markdown corruption
-  renderOnRestore: true // Render math during restore phase
+  breaks: true,         // Convert line breaks to <br>
+  gfm: true,            // GitHub Flavored Markdown
+  headerIds: true,      // Add IDs to headers
+  katex: true,          // Enable KaTeX math rendering
+  mermaid: true,        // Enable Mermaid diagram rendering
+  highlight: true,      // Enable syntax highlighting
+  sanitize: true,       // Enable HTML sanitization
+  protectMath: true,    // Protect math from markdown corruption
+  renderOnRestore: true, // Render math during restore phase
+  selfCorrect: {        // Optional: auto-fix broken renders
+    fix: async (code, format, error) => correctedCode,
+    maxRetries: 1        // 1-3, default 1
+  }
 });
 ```
 
 #### Methods
+
+All render methods are async and return Promises:
 
 - **`render(markdown)`** - Render markdown to HTML string
 - **`renderFull(markdown)`** - Render and return `{ html, mermaidMap, katexMap }`
@@ -105,12 +114,46 @@ const renderer = new MertexMD({
 ```javascript
 const stream = renderer.createStreamRenderer(element);
 
-stream.appendContent(chunk);  // Append new content chunk
-stream.setContent(content);   // Replace content entirely
-stream.finalize();            // Complete rendering
-stream.reset();               // Reset for new content
-stream.getContent();          // Get current content
-stream.getStats();            // Get rendering statistics
+await stream.appendContent(chunk);  // Append new content chunk
+await stream.setContent(content);   // Replace content entirely
+await stream.finalize();            // Complete rendering
+stream.reset();                     // Reset for new content
+stream.getContent();                // Get current content
+stream.getStats();                  // Get rendering statistics
+```
+
+### Self-Correcting Render
+
+When mermaid or KaTeX rendering fails, mertex can call a consumer-provided `fix` callback to attempt correction. This enables LLM-powered auto-repair of broken syntax.
+
+```javascript
+const renderer = new MertexMD({
+  selfCorrect: {
+    fix: async (code, format, error) => {
+      // code: the broken source (mermaid definition or LaTeX expression)
+      // format: "mermaid" or "katex"
+      // error: the error message from the failed render
+      // Return the corrected code string
+      const response = await callLLM(`Fix this ${format} code:\n${code}\n\nError: ${error}`);
+      return response;
+    },
+    maxRetries: 1, // default 1, max 3
+  },
+});
+```
+
+When self-correction is in progress, placeholder elements receive the `.mertex-fixing` CSS class, which consumers can style to show a loading state.
+
+The `selfCorrectRender` utility is also exported for direct use:
+
+```javascript
+import { selfCorrectRender } from 'mertex.md';
+
+const result = await selfCorrectRender(code, 'mermaid', errorMsg, renderFn, {
+  fix: myFixCallback,
+  maxRetries: 2,
+});
+// result: { success: boolean, result?: any, code?: string }
 ```
 
 ## Dependencies

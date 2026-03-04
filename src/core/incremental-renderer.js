@@ -17,17 +17,17 @@ export class IncrementalContentRenderer {
         this.renderCount = 0;
     }
     
-    appendNewContent(targetElement, fullContent, renderMarkdown) {
+    async appendNewContent(targetElement, fullContent, renderMarkdown) {
         if (!targetElement || !fullContent) return false;
         if (fullContent === this.lastContent) return false;
-        
+
         this.renderCount++;
         const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
-        
+
         const existingCursor = targetElement.querySelector('.streaming-cursor');
         if (existingCursor) existingCursor.remove();
-        
-        const fullRenderedHtml = renderMarkdown(fullContent, { katex: true });
+
+        const fullRenderedHtml = await renderMarkdown(fullContent, { katex: true });
         const html = typeof fullRenderedHtml === 'object' ? fullRenderedHtml.html : fullRenderedHtml;
         targetElement.innerHTML = html;
         

@@ -4,6 +4,7 @@
 
 import { encodeBase64, decodeBase64 } from '../utils/hash.js';
 import { looksLikeCurrency, isCurrencyRange } from '../utils/currency-detector.js';
+import { selfCorrectRender } from '../handlers/self-correct.js';
 
 function getKaTeX() {
     if (typeof katex !== 'undefined') return katex;
@@ -118,17 +119,23 @@ export class MathProtector {
         return { protected: protectedContent, mathMap };
     }
     
-    restore(content, mathMap) {
+    restore(content, mathMap, selfCorrect) {
         if (!content || !mathMap || mathMap.size === 0) return content;
-        
+
+        // Async path when self-correct is enabled
+        if (selfCorrect?.fix) {
+            return this._restoreAsync(content, mathMap, selfCorrect);
+        }
+
+        // Sync path (default — preserves backward compatibility)
         let restored = content;
         const sortedPlaceholders = Array.from(mathMap.keys()).sort().reverse();
         const katexLib = getKaTeX();
-        
+
         for (const placeholder of sortedPlaceholders) {
             const mathInfo = mathMap.get(placeholder);
             if (!mathInfo) continue;
-            
+
             let original;
             if (mathInfo.encodedOriginal) {
                 original = this.decodeBase64(mathInfo.encodedOriginal);
@@ -137,17 +144,48 @@ export class MathProtector {
             } else {
                 continue;
             }
-            
+
             let replacement;
             if (this.options.renderOnRestore && katexLib) {
-                replacement = this.renderMathExpression(original, mathInfo, katexLib);
+                replacement = this._renderMathSync(original, mathInfo, katexLib);
             } else {
                 replacement = original;
             }
-            
+
             restored = restored.split(placeholder).join(replacement);
         }
-        
+
+        return restored;
+    }
+
+    async _restoreAsync(content, mathMap, selfCorrect) {
+        let restored = content;
+        const sortedPlaceholders = Array.from(mathMap.keys()).sort().reverse();
+        const katexLib = getKaTeX();
+
+        for (const placeholder of sortedPlaceholders) {
+            const mathInfo = mathMap.get(placeholder);
+            if (!mathInfo) continue;
+
+            let original;
+            if (mathInfo.encodedOriginal) {
+                original = this.decodeBase64(mathInfo.encodedOriginal);
+            } else if (mathInfo.original) {
+                original = mathInfo.original;
+            } else {
+                continue;
+            }
+
+            let replacement;
+            if (this.options.renderOnRestore && katexLib) {
+                replacement = await this._renderMathWithSelfCorrect(original, mathInfo, katexLib, selfCorrect);
+            } else {
+                replacement = original;
+            }
+
+            restored = restored.split(placeholder).join(replacement);
+        }
+
         return restored;
     }
     
@@ -159,13 +197,13 @@ export class MathProtector {
         return backtickCount % 2 === 1;
     }
     
-    renderMathExpression(original, mathInfo, katexLib) {
+    _renderMathSync(original, mathInfo, katexLib) {
         try {
             const innerContent = mathInfo.innerContent;
             const isDisplay = mathInfo.display;
-            
+
             if (!innerContent || !innerContent.trim()) return original;
-            
+
             const rendered = katexLib.renderToString(innerContent, {
                 displayMode: isDisplay,
                 throwOnError: false,
@@ -173,12 +211,51 @@ export class MathProtector {
                 strict: false,
                 output: 'htmlAndMathml'
             });
-            
+
             if (isDisplay) {
                 return '<div class="katex-display-wrapper">' + rendered + '</div>';
             }
             return rendered;
         } catch (error) {
+            return original;
+        }
+    }
+
+    async _renderMathWithSelfCorrect(original, mathInfo, katexLib, selfCorrect) {
+        const innerContent = mathInfo.innerContent;
+        const isDisplay = mathInfo.display;
+
+        if (!innerContent || !innerContent.trim()) return original;
+
+        const wrapResult = (html) => {
+            if (isDisplay) return '<div class="katex-display-wrapper">' + html + '</div>';
+            return html;
+        };
+
+        try {
+            const rendered = katexLib.renderToString(innerContent, {
+                displayMode: isDisplay,
+                throwOnError: true,
+                trust: true,
+                strict: false,
+                output: 'htmlAndMathml'
+            });
+            return wrapResult(rendered);
+        } catch (error) {
+            const result = await selfCorrectRender(
+                innerContent, 'katex', error.message || String(error),
+                async (corrected) => {
+                    return katexLib.renderToString(corrected, {
+                        displayMode: isDisplay,
+                        throwOnError: true,
+                        trust: true,
+                        strict: false,
+                        output: 'htmlAndMathml'
+                    });
+                },
+                selfCorrect
+            );
+            if (result.success) return wrapResult(result.result);
             return original;
         }
     }
