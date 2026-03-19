@@ -1,17 +1,16 @@
 # mertex.md
 
-A JavaScript library for rendering Markdown with LaTeX math (KaTeX) and Mermaid diagrams. Designed for both static rendering and real-time streaming scenarios.
+Rich Markdown rendering with LaTeX math, Mermaid diagrams, and syntax-highlighted code — with first-class streaming support for LLM chat interfaces. Renders all elements live as content arrives chunk by chunk, with smart caching to keep it fast.
 
 ## Features
 
-- **Markdown Rendering**: Full GitHub Flavored Markdown support via marked.js
-- **Math Protection**: Protects LaTeX expressions from markdown processing corruption
-- **KaTeX Integration**: Renders inline (`$...$`) and display (`$$...$$`) math
-- **Mermaid Diagrams**: Renders mermaid code blocks as SVG diagrams
-- **Streaming Support**: Optimized incremental rendering for real-time content
+- **Streaming Rendering**: Renders math, diagrams, and highlighted code in real time as LLM output streams in — not after it finishes
+- **LaTeX Math**: Inline (`$...$`) and display (`$$...$$`) math via KaTeX, with smart `$` disambiguation that won't mangle your currency values
+- **Mermaid Diagrams**: 23 diagram types rendered as SVGs, cached across re-renders during streaming
+- **Syntax Highlighting**: Automatic code block highlighting via highlight.js with language detection
+- **Self-Correcting Render**: When LLM-generated mermaid/KaTeX has syntax errors, call your own fix callback (e.g., another LLM) to auto-repair and retry
 - **XSS Protection**: Built-in HTML sanitization via DOMPurify
-- **Self-Correcting Render**: Pluggable callback to fix broken mermaid/KaTeX via LLM or other means
-- **Syntax Highlighting**: Code block highlighting via highlight.js
+- **Static Rendering**: Also works as a straightforward one-shot Markdown → HTML renderer
 
 ## Installation
 
