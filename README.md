@@ -156,6 +156,13 @@ const result = await selfCorrectRender(code, 'mermaid', errorMsg, renderFn, {
 // result: { success: boolean, result?: any, code?: string }
 ```
 
+## Documentation
+
+See [`docs/`](docs/) for detailed documentation:
+
+- [Architecture](docs/architecture/) — System design, components, data flow, dependencies
+- [Guides](docs/guides/) — Getting started, streaming, self-correcting render, API reference
+
 ## Dependencies
 
 ### Required
@@ -178,6 +185,7 @@ This generates:
 - `dist/mertex.esm.js` - ES module version
 - `dist/mertex.umd.js` - UMD version for browsers
 - `dist/mertex.min.js` - Minified UMD version
+- `dist/mertex.bundled.min.js` - Minified with marked/DOMPurify bundled
 
 ## License
 
