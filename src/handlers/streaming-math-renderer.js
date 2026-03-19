@@ -137,22 +137,51 @@ export class StreamingMathRenderer {
         return signatures;
     }
     
+    protectCurrencyInDOM(element) {
+        // Walk text nodes and wrap currency $amounts in spans that KaTeX will skip
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+        const nodesToProcess = [];
+        let node;
+        while (node = walker.nextNode()) {
+            // Skip nodes inside code, pre, katex elements
+            const parent = node.parentElement;
+            if (parent && (parent.closest('code') || parent.closest('pre') || parent.closest('.katex'))) continue;
+            if (/\$\d/.test(node.textContent)) {
+                nodesToProcess.push(node);
+            }
+        }
+        for (const textNode of nodesToProcess) {
+            const text = textNode.textContent;
+            // Match currency patterns: $50, $1,234.56, $50-$100, $50/unit, $50k etc
+            const currencyPattern = /\$\d[\d,]*(?:\.\d+)?(?:\s*[–\-]\s*\$\d[\d,]*(?:\.\d+)?)?(?:\/\w+|k|m|bn)?/gi;
+            if (currencyPattern.test(text)) {
+                const span = document.createElement('span');
+                span.className = 'currency-protected';
+                span.textContent = text;
+                textNode.parentNode.replaceChild(span, textNode);
+            }
+        }
+    }
+
     renderMath(targetElement) {
         const renderFn = getRenderMathInElement();
         if (!renderFn) return false;
-        
+
         try {
             const beforeCount = targetElement.querySelectorAll('.katex').length;
-            
+
+            // Protect currency values from KaTeX's $ scanner
+            this.protectCurrencyInDOM(targetElement);
+
             renderFn(targetElement, {
                 delimiters: this.delimiters,
                 throwOnError: false,
                 trust: true,
                 strict: false,
                 ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-                ignoredClasses: ['katex', 'katex-display']
+                ignoredClasses: ['katex', 'katex-display', 'currency-protected']
             });
-            
+
             const afterCount = targetElement.querySelectorAll('.katex').length;
             return afterCount > beforeCount;
         } catch (err) {
