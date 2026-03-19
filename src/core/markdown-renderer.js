@@ -67,23 +67,33 @@ export async function renderMarkdown(text, options = {}) {
     const markedLib = getMarked();
     const hljsLib = getHljs();
     
+    let html;
     if (markedLib) {
+        const renderer = new markedLib.Renderer();
+        if (config.highlight && hljsLib) {
+            renderer.code = function({ text, lang }) {
+                if (lang && lang.toLowerCase() === 'mermaid') {
+                    return '<pre><code class="language-mermaid">' + text + '</code></pre>';
+                }
+                let highlighted = text;
+                if (lang && hljsLib.getLanguage(lang)) {
+                    try { highlighted = hljsLib.highlight(text, { language: lang }).value; }
+                    catch (err) { /* fall through */ }
+                } else {
+                    try { highlighted = hljsLib.highlightAuto(text).value; }
+                    catch (err) { /* fall through */ }
+                }
+                const langClass = lang ? ' language-' + lang : '';
+                return '<pre><code class="hljs' + langClass + '">' + highlighted + '</code></pre>';
+            };
+        }
         markedLib.setOptions({
             breaks: config.breaks, gfm: config.gfm,
-            headerIds: config.headerIds, mangle: config.mangle,
-            highlight: config.highlight && hljsLib ? function(code, lang) {
-                if (lang && lang.toLowerCase() === 'mermaid') return code;
-                if (lang && hljsLib.getLanguage(lang)) {
-                    try { return hljsLib.highlight(code, { language: lang }).value; }
-                    catch (err) { return code; }
-                }
-                try { return hljsLib.highlightAuto(code).value; }
-                catch (err) { return code; }
-            } : null
         });
+        html = markedLib.parse(processedText, { renderer });
+    } else {
+        html = processedText;
     }
-    
-    let html = markedLib ? markedLib.parse(processedText) : processedText;
     
     const purify = getDOMPurify();
     if (purify) {

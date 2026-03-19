@@ -9,12 +9,14 @@ export class IncrementalContentRenderer {
         this.processedFormulas = new Set();
         this.lastContent = '';
         this.renderCount = 0;
+        this.mermaidCache = new Map(); // id -> outerHTML string
     }
-    
+
     reset() {
         this.processedFormulas.clear();
         this.lastContent = '';
         this.renderCount = 0;
+        this.mermaidCache.clear();
     }
     
     async appendNewContent(targetElement, fullContent, renderMarkdown) {
@@ -30,7 +32,35 @@ export class IncrementalContentRenderer {
         const fullRenderedHtml = await renderMarkdown(fullContent, { katex: true });
         const html = typeof fullRenderedHtml === 'object' ? fullRenderedHtml.html : fullRenderedHtml;
         targetElement.innerHTML = html;
-        
+
+        // Restore cached mermaid SVGs, or render new ones
+        const placeholders = targetElement.querySelectorAll('.mermaid-placeholder');
+        if (placeholders.length > 0) {
+            const mermaidLib = (typeof mermaid !== 'undefined') ? mermaid :
+                               (typeof window !== 'undefined' && window.mermaid) ? window.mermaid : null;
+
+            for (const ph of placeholders) {
+                const id = ph.getAttribute('data-mermaid-id');
+                if (this.mermaidCache.has(id)) {
+                    const temp = document.createElement('div');
+                    temp.innerHTML = this.mermaidCache.get(id);
+                    ph.replaceWith(temp.firstChild);
+                } else if (mermaidLib && this.mermaidSources && this.mermaidSources.has(id)) {
+                    // Render for the first time
+                    try {
+                        const code = this.mermaidSources.get(id);
+                        const uniqueId = 'mermaid-' + id + '-' + Date.now();
+                        const { svg } = await mermaidLib.render(uniqueId, code);
+                        const container = document.createElement('div');
+                        container.setAttribute('data-mermaid-id', id);
+                        container.innerHTML = svg;
+                        this.mermaidCache.set(id, container.outerHTML);
+                        ph.replaceWith(container);
+                    } catch(e) { /* will retry next tick or on finalize */ }
+                }
+            }
+        }
+
         const cursor = document.createElement('span');
         cursor.className = 'streaming-cursor';
         targetElement.appendChild(cursor);

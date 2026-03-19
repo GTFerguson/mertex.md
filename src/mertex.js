@@ -114,6 +114,9 @@ class StreamRenderer {
         this.content = '';
         this.incrementalRenderer = new IncrementalContentRenderer();
         this.streamingMathRenderer = new StreamingMathRenderer();
+        this._lastMermaidCount = 0;
+        this._mermaidRendering = false;
+        this._mermaidRendered = new Map(); // id -> SVG element
     }
     
     /**
@@ -125,6 +128,12 @@ class StreamRenderer {
         if (!chunk) return false;
 
         this.content += chunk;
+
+        // Get mermaid sources so the incremental renderer can render them inline
+        const preResult = await renderMarkdown(this.content, this.options);
+        if (preResult.mermaidMap && preResult.mermaidMap.size > 0) {
+            this.incrementalRenderer.mermaidSources = preResult.mermaidMap;
+        }
 
         const updated = await this.incrementalRenderer.appendNewContent(
             this.targetElement,
@@ -179,6 +188,9 @@ class StreamRenderer {
         this.content = '';
         this.incrementalRenderer.reset();
         this.streamingMathRenderer.reset();
+        this._lastMermaidCount = 0;
+        this._mermaidRendering = false;
+        this._mermaidRendered = new Map();
         this.targetElement.innerHTML = '';
     }
     

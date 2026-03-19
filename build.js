@@ -17,14 +17,31 @@ const banner = `/**
 // Note: esbuild exports getters, so we access them directly as the getters auto-invoke
 const legacyGlobalsFooter = `
 if(typeof window!=="undefined"){
-    // Main Mertex export - access both named and default exports
-    var _MertexMD = Mertex.MertexMD;
-    var _default = Mertex.default;
-    window.Mertex = _default || Mertex;
-    window.MertexMD = _MertexMD || _default;
-    
-    // Backward-compatible globals for existing code
-    // MarkdownRenderer API (used by base.html, graph-chat.js, graph-chat-dedicated.js)
+    // Mertex is the IIFE global — ensure MertexMD class is accessible
+    // esbuild IIFE may put MertexMD as Mertex.MertexMD or as Mertex.default
+    var _M = Mertex.MertexMD || Mertex.default || Mertex;
+
+    // Expose MertexMD as a top-level global with all sub-exports attached
+    window.MertexMD = Object.assign(_M, {
+        MertexMD: _M,
+        MathProtector: Mertex.MathProtector,
+        IncrementalContentRenderer: Mertex.IncrementalContentRenderer,
+        StreamingMathRenderer: Mertex.StreamingMathRenderer,
+        MermaidHandler: Mertex.MermaidHandler,
+        KaTeXHandler: Mertex.KaTeXHandler,
+        renderMarkdown: Mertex.renderMarkdown,
+        renderMarkdownLegacy: Mertex.renderMarkdownLegacy,
+        renderMarkdownInElement: Mertex.renderMarkdownInElement,
+        autoRenderMarkdown: Mertex.autoRenderMarkdown,
+        initMarkdownRenderer: Mertex.initMarkdownRenderer,
+        selfCorrectRender: Mertex.selfCorrectRender,
+        VERSION: Mertex.VERSION
+    });
+
+    // Keep Mertex as alias
+    window.Mertex = window.MertexMD;
+
+    // Backward-compatible globals
     window.MarkdownRenderer={
         render: Mertex.renderMarkdown,
         renderLegacy: Mertex.renderMarkdownLegacy,
@@ -34,15 +51,11 @@ if(typeof window!=="undefined"){
         mermaid: Mertex.MermaidHandler || {},
         katex: Mertex.KaTeXHandler || {}
     };
-    
-    // Individual class globals (used by graph-chat-dedicated.js)
     window.MathProtector = Mertex.MathProtector;
     window.IncrementalContentRenderer = Mertex.IncrementalContentRenderer;
     window.StreamingMathRenderer = Mertex.StreamingMathRenderer;
     window.MermaidHandler = Mertex.MermaidHandler;
     window.KaTeXHandler = Mertex.KaTeXHandler;
-    
-    console.log('[mertex.md] Library loaded with backward-compatible globals');
 }
 `;
 
